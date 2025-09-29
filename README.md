@@ -1,34 +1,65 @@
-# 1 in 10000 chance of Foxy jumpscare per second
-[![Discord](https://img.shields.io/badge/akaduy69420-%235865F2.svg?&logo=discord&logoColor=white)](https://discord.com/users/799965541283528714)
-[![Github](https://img.shields.io/badge/lilyud420-black?style=flat&logo=github&logoColor=white)](https://github.com/lilyud420/1_10000_jumpscare)
+# Kurumi Says "My Honey"
 
-## Overview:
+Bring Tokisaki Kurumi's "My Honey" energy straight into Anki. Ten seconds after
+Anki launches, Kurumi lovingly appears with a short audio clip, then repeats the
+visit every 30 minutes for five seconds. Both the visual overlay and the audio
+use the included media files.
 
-This is an add-on that make your study **thrilling**.
+## How it works
 
-Every second, there is a 1 in 10000 chance that Foxy will randomly jumpscare you
+- After a 10 second delay, the add-on shows the `my honey screenshot.png` image
+  in a frameless overlay sized to the main Anki window.
+- Simultaneously, it plays the bundled `my-honey-by Kurumi.mp3` audio file.
+- The overlay automatically disappears five seconds later.
+- The reminder repeats on a 30 minute interval for as long as Anki stays open.
 
-## Screenshot: 
-![Screenshots: ](https://raw.githubusercontent.com/lilyud420/1_10000_jumpscare/refs/heads/main/anki_addon_showcase.png)
+The Python entry point is stored in the `kurumi says my honey.py` module and is
+loaded from `__init__.py` so the add-on remains compatible with Anki's
+packaging expectations.
 
-## Configurations:
+## Media credits
 
-Volume: 1.0, e.g 0.8 = 80%
+- **Image**: `my honey screenshot.png`
+- **Audio**: `my-honey-by Kurumi.mp3`
 
-## Notes:
+Please ensure you have the rights to redistribute these assets if you publish
+the add-on.
 
-Make sure you're at **latest version** (Anki 2.1.50+) 
+## Testing
 
-Please use it at your own risk
+From the repository root you can at least check that the Python files compile:
 
-The add-on only works if you're focused on the main **Anki window**
+```bash
+python -m compileall .
+```
 
-Inspired by "1/10000 Chance for Withered Foxy Jumpscare Every Second" by **YMY** from TmodLoader.
+Launch Anki with the add-on installed to manually verify the timed overlay and
+audio playback.
 
-## Changelog:
+## Creating and publishing an Anki add-on
 
-* v1.0.2: Modified from 5 seconds to 1 seconds (my bad)
+1. **Prepare your add-on folder**
+   - Include an `__init__.py` file; Anki loads this on startup.
+   - Add any supporting Python modules, media files, and a `manifest.json` if
+     you need to specify metadata for the add-on manager.
+   - Test the add-on locally inside your Anki add-ons directory.
+2. **Package the add-on**
+   - Zip the add-on folder contents (not the folder itself) so that `__init__.py`
+     lives at the archive root.
+   - Confirm the archive structure by extracting it into a temporary directory
+     and checking the layout.
+3. **Create an AnkiWeb listing**
+   - Log in to [AnkiWeb](https://ankiweb.net/) and open the *Add-ons* section.
+   - Click **Upload Add-on** and provide a name, description, screenshots, and
+     version notes. Mention any dependencies or platform-specific details.
+   - Upload the ZIP archive you prepared earlier.
+4. **Share the code** (optional but recommended)
+   - Publish the source on a platform like GitHub so users can review and
+     contribute improvements.
+   - Add installation instructions and changelog entries to your README.
+5. **Maintain the release**
+   - Respond to user feedback, fix bugs, and bump the version when you update
+     the add-on.
 
-* v1.0.1: Now the add-on only works if you’re focused on the main Anki window
+For more details, consult the [official Anki add-on guide](https://addon-docs.ankiweb.net/).
 
-* v1.0.0: Release
