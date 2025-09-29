@@ -13,7 +13,8 @@ Every second, there is a 1 in 10000 chance that Foxy will randomly jumpscare you
 
 ## Configurations:
 
-Volume: 1.0, e.g 0.8 = 80%
+* `volume`: 1.0, e.g 0.8 = 80%
+* `chance_out_of`: 10000 → 1 in 10000 chance per second (lower values increase the frequency)
 
 ## Notes:
 

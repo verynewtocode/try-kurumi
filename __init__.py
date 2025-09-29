@@ -1,14 +1,53 @@
 ##Warning: Use it as your own risk
-import random, os, xml.etree.ElementTree as ET 
-from aqt import mw 
-from aqt.qt import QTimer, QLabel, QPixmap, Qt, QPainter, QGuiApplication
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PyQt6.QtCore import QUrl
+import os
+import random
+import xml.etree.ElementTree as ET
 
-config = mw.addonManager.getConfig(__name__)
-CHANCE = 1 / 10000
+from aqt import mw
+from aqt.qt import QLabel, QPainter, QPixmap, Qt, QTimer
+from PyQt6.QtCore import QUrl
+from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
+
+config = mw.addonManager.getConfig(__name__) or {}
+
+
+def _clamp(value: float, minimum: float, maximum: float) -> float:
+    """Clamp ``value`` to the inclusive range ``[minimum, maximum]``."""
+
+    return max(minimum, min(value, maximum))
+
+
+def _load_configured_chance() -> float:
+    """Return the per-second probability from the add-on configuration."""
+
+    denominator = config.get("chance_out_of", 10_000)
+    try:
+        denominator = float(denominator)
+    except (TypeError, ValueError):
+        denominator = 10_000
+
+    # Treat non-positive values as "always trigger" to avoid ZeroDivisionError.
+    if denominator <= 0:
+        return 1.0
+
+    return 1.0 / denominator
+
+
+def _load_configured_volume() -> float:
+    """Return a volume between 0.0 and 1.0."""
+
+    volume = config.get("volume", 1.0)
+    try:
+        volume = float(volume)
+    except (TypeError, ValueError):
+        volume = 1.0
+
+    return _clamp(volume, 0.0, 1.0)
+
+
+CHANCE = _load_configured_chance()
 FPS = 20
-VOLUME_SET = float(config.get("volume", 100))
+VOLUME_SET = _load_configured_volume()
 ADDON_PATH = os.path.dirname(__file__)
 IMAGE_PATH = os.path.join(ADDON_PATH, "foxy.png")
 XML_PATH = os.path.join(ADDON_PATH, "foxy.xml")
