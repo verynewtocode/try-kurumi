@@ -1,105 +1,87 @@
-##Warning: Use it as your own risk
-import random, os, xml.etree.ElementTree as ET 
-from aqt import mw 
-from aqt.qt import QTimer, QLabel, QPixmap, Qt, QPainter, QGuiApplication
-from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+## Warning: Use it at your own risk
+import os
+
+from aqt import mw
+from aqt.qt import QLabel, QPixmap, Qt, QTimer
 from PyQt6.QtCore import QUrl
+from PyQt6.QtMultimedia import QAudioOutput, QMediaPlayer
 
 config = mw.addonManager.getConfig(__name__)
-CHANCE = 1 / 10000
-FPS = 20
-VOLUME_SET = float(config.get("volume", 100))
+
 ADDON_PATH = os.path.dirname(__file__)
-IMAGE_PATH = os.path.join(ADDON_PATH, "foxy.png")
-XML_PATH = os.path.join(ADDON_PATH, "foxy.xml")
+IMAGE_PATH = os.path.join(ADDON_PATH, "kurumi.png")
 SOUND_PATH = os.path.join(ADDON_PATH, "jumpscare.mp3")
 
-player = None
-audio_output = None
-frames = []
+DISPLAY_DELAY_MS = 10_000
+DISPLAY_DURATION_MS = 5_000
+VOLUME_SET = float(config.get("volume", 100))
+
+_label = None
+_player = None
+_audio_output = None
 
 
-def load_frames():
-    global frames
-    frames.clear()
+def _close_overlay():
+    global _label, _player, _audio_output
 
-    sheet = QPixmap(IMAGE_PATH)
-    tree = ET.parse(XML_PATH)
-    root = tree.getroot()
+    if _player is not None:
+        _player.stop()
 
-    for sub in root.findall("SubTexture"):
-        x, y = int(sub.get("x")), int(sub.get("y"))
-        w, h = int(sub.get("width")), int(sub.get("height"))
-        fx, fy = int(sub.get("frameX", 0)), int(sub.get("frameY", 0))
-        fw, fh = int(sub.get("frameWidth", w)), int(sub.get("frameHeight", h))
+    if _label is not None:
+        _label.close()
 
-        subimg = sheet.copy(x, y, w, h)
-
-        frame = QPixmap(fw, fh)
-        frame.fill(Qt.GlobalColor.transparent)
-
-        painter = QPainter(frame)
-
-        painter.drawPixmap(-fx, -fy, subimg)
-        painter.end()
-
-        frames.append(frame)
+    _label = None
+    _player = None
+    _audio_output = None
 
 
-def play_jumpscare():
-    global player, audio_output
-    if not frames:
-        load_frames()
+def _show_overlay():
+    global _label, _player, _audio_output
 
+    if _label is not None:
+        return
 
-    label = QLabel(mw)
-    label.setWindowFlags(Qt.WindowType.FramelessWindowHint)
-    label.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-    label.setStyleSheet("background-color: transparent;")
-    label.setGeometry(mw.rect())
-    label.setScaledContents(True)
-    label.show()
+    pixmap = QPixmap(IMAGE_PATH)
 
+    if pixmap.isNull():
+        print("Kurumi overlay: failed to load image", IMAGE_PATH)
+        return
+
+    _label = QLabel(mw)
+    _label.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+    _label.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+    _label.setStyleSheet("background-color: transparent;")
+    _label.setGeometry(mw.rect())
+    _label.setScaledContents(True)
+    _label.setPixmap(
+        pixmap.scaled(
+            mw.size(),
+            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+    )
+    _label.show()
 
     try:
-        player = QMediaPlayer()
-        audio_output = QAudioOutput()
-        player.setAudioOutput(audio_output)
-        player.setSource(QUrl.fromLocalFile(SOUND_PATH))
-        audio_output.setVolume(VOLUME_SET)
-        player.play()
-    except Exception as e:
-        print("Sound error:", e)
+        _player = QMediaPlayer()
+        _audio_output = QAudioOutput()
+        _player.setAudioOutput(_audio_output)
+        _player.setSource(QUrl.fromLocalFile(SOUND_PATH))
+        _audio_output.setVolume(VOLUME_SET)
+        _player.play()
+    except Exception as err:
+        print("Kurumi overlay: sound error", err)
+
+    QTimer.singleShot(DISPLAY_DURATION_MS, _close_overlay)
 
 
-    frame_index = {"i": 0}
-
-    def next_frame():
-        if frame_index["i"] < len(frames):
-            f = frames[frame_index["i"]]
-            label.setPixmap(f.scaled(
-                mw.size(),  
-                Qt.AspectRatioMode.IgnoreAspectRatio,
-                Qt.TransformationMode.SmoothTransformation
-            ))
-            frame_index["i"] += 1
-        else:
-            label.close()
-
-
-    anim_timer = QTimer(mw)
-    anim_timer.timeout.connect(next_frame)
-    anim_timer.start(1000 // FPS)
-    next_frame()
-
-
-def check_random():
+def _schedule_overlay():
     if not mw.isActiveWindow():
+        # Try again shortly if the main window is not ready yet
+        QTimer.singleShot(500, _schedule_overlay)
         return
-    
-    if random.random() < CHANCE:
-        play_jumpscare()
 
-timer = QTimer(mw)
-timer.timeout.connect(check_random)
-timer.start(1000)
+    _show_overlay()
+
+
+QTimer.singleShot(DISPLAY_DELAY_MS, _schedule_overlay)
